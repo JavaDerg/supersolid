@@ -17,8 +17,6 @@ macro_rules! fatal {
 }
 
 fn main() {
-    let l = fatal!("test");
-
     tracing_subscriber::fmt::init();
 
     if let Some(dir) = std::env::args().skip(1).next() {
@@ -42,6 +40,7 @@ fn main() {
         Ok(Err(err)) => fatal!("Unable to parse config; error={}", err),
         Err(err) => fatal!("Unable to read config; error={}", err),
     };
+    info!("{:?}", config);
 }
 
 // Taken from https://stackoverflow.com/a/54817755

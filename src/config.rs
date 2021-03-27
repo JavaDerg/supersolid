@@ -2,20 +2,20 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::path::{PathBuf, Path};
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub struct ProjectConfig {
     pub vars: HashMap<String, VarSource>,
     pub dist: PathBuf,
-    pub src: HashMap<String, Source>
+    pub src: Vec<(String, Source)>
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub enum VarSource {
     Text(String),
     Env(String),
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub enum Source {
     Html(String),
     Md {
