@@ -1,0 +1,3 @@
+[submodule "based.cooking"]
+	path = based.cooking
+	url = git@github.com:post-rex/based.cooking.git

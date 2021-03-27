@@ -179,3 +179,8 @@ tags
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/rust,visualstudiocode,vim,clion,sublimetext
+
+
+# Added by cargo
+
+/target
