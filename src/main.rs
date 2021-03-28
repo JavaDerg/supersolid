@@ -40,7 +40,8 @@ fn main() {
         Ok(Err(err)) => fatal!("Unable to parse config; error={}", err),
         Err(err) => fatal!("Unable to read config; error={}", err),
     };
-    info!("{:?}", config);
+
+    info!("Outputing into {}", config.dist.to_string_lossy())
 }
 
 // Taken from https://stackoverflow.com/a/54817755
