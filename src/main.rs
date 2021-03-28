@@ -9,12 +9,14 @@ use std::io::Error;
 mod config;
 mod parser;
 
+#[macro_export]
 macro_rules! fatal {
     ($($token:tt)+) => {{
         tracing::error!($($token)+);
         ::std::process::exit(1);
     }};
 }
+
 
 fn main() {
     tracing_subscriber::fmt::init();
@@ -41,7 +43,9 @@ fn main() {
         Err(err) => fatal!("Unable to read config; error={}", err),
     };
 
-    info!("Outputing into {}", config.dist.to_string_lossy())
+    info!("Outputting into {}", config.dist.to_string_lossy());
+
+    let var_stack = config.get_stack();
 }
 
 // Taken from https://stackoverflow.com/a/54817755

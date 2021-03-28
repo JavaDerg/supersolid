@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::path::{PathBuf, Path};
+use std::env::VarError;
+#[macro_use]
+use crate::fatal;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct ProjectConfig {
@@ -9,7 +12,7 @@ pub struct ProjectConfig {
     pub src: Vec<(String, Source)>
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub enum VarSource {
     Text(String),
     Env(String),
@@ -32,6 +35,21 @@ pub struct VarStack(Rc<InnerVs>);
 struct InnerVs {
     vars: HashMap<String, String>,
     prev: Option<Box<VarStack>>,
+}
+
+impl ProjectConfig {
+    pub fn get_stack(&self) -> VarStack {
+        VarStack(Rc::new(InnerVs {
+            vars: self.vars.clone().into_iter().map(|(k, v)| (k, match v {
+                VarSource::Text(str) => str,
+                VarSource::Env(env) => match std::env::var(&env) {
+                    Ok(str) => str,
+                    Err(err) => fatal!("Unable to obtain environment variable; name={}; error={}", env, err),
+                }
+            })).collect::<HashMap<_, _>>(),
+            prev: None
+        }))
+    }
 }
 
 impl VarStack {
