@@ -75,7 +75,7 @@ fn main() {
             vars: Default::default(),
         };
         match src {
-            Source::Html(src) => process(src, HtmlProcessor { cfg }),
+            Source::Html(src) => process(src, HtmlProcessor { cfg, stack: vec![] }),
             Source::Md { src, template } => process(src, MarkdownProcessor { cfg, template }),
             Source::For(src) => fatal!("'For' not implemented yet; src={}", src), // TODO
         }

@@ -1,13 +1,21 @@
 use html5ever::tendril::TendrilSink;
-use html5ever::{parse_fragment, ParseOpts, Parser, QualName, ns, namespace_url, local_name};
+use html5ever::{local_name, namespace_url, ns, parse_fragment, ParseOpts, Parser, QualName};
 use markup5ever_rcdom::{Handle, RcDom};
 
-fn parse_snippet(snippet: &str) -> Handle {
-    make_sub_parser().one(snippet).document
+pub fn parse_snippet(snippet: &str) -> Handle {
+    parse(make_sub_parser(), snippet)
 }
 
-fn parse_document(doc: &str) -> Handle {
-    make_doc_parser().one(doc).document
+pub fn parse_document(doc: &str) -> Handle {
+    parse(make_doc_parser(), doc)
+}
+
+fn parse(parser: Parser<RcDom>, doc: &str) -> Handle {
+    let doc = parser.one(doc);
+    for err in &doc.errors {
+        tracing::warn!("Error while parsing document. Continuing...; error={}", err);
+    }
+    doc.document
 }
 
 fn make_doc_parser() -> Parser<RcDom> {
