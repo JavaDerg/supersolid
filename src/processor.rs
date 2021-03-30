@@ -131,7 +131,6 @@ impl<'a> HtmlProcessor<'a> {
 
 impl<'a> Processor for MarkdownProcessor<'a> {
     fn process(&mut self, path: &Path) -> Handle {
-        // TODO: handle template
         let src = read_file(path);
         let mut new_src = String::with_capacity(src.len());
         let mut vars = HashMap::new();
