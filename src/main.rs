@@ -68,14 +68,21 @@ fn main() {
     trace!("Creating new dist dir; path={}", &dist.to_string_lossy());
     std::fs::create_dir_all(&dist);
 
-    let var_stack = config.get_stack();
+    let var_stack = config.get_stack(); // TODO
     for (output, src) in config.src.into_iter() {
         let cfg = processor::ProcessorConfig {
             out_path: &dist.join(Path::new(&output)),
             vars: Default::default(),
         };
         match src {
-            Source::Html(src) => process(src, HtmlProcessor { cfg, stack: vec![] }),
+            Source::Html(src) => process(
+                src,
+                HtmlProcessor {
+                    cfg,
+                    stack: vec![],
+                    content: vec![],
+                },
+            ),
             Source::Md { src, template } => process(src, MarkdownProcessor { cfg, template }),
             Source::For(src) => fatal!("'For' not implemented yet; src={}", src), // TODO
         }

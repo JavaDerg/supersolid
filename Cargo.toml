@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 html5ever = "0.25"
 markup5ever_rcdom = "0.1"
-pulldown-cmark = "0.8"
+pulldown-cmark = { version = "0.8", default-features = false, features = ["simd"] }
 string_cache = "0.8"
 regex = "1.4"
 glob = "0.3"

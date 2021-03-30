@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use std::rc::Rc;
-use std::path::{PathBuf, Path};
 use std::env::VarError;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
 #[macro_use]
 use crate::fatal;
 
@@ -9,7 +9,7 @@ use crate::fatal;
 pub struct ProjectConfig {
     pub vars: HashMap<String, VarSource>,
     pub dist: PathBuf,
-    pub src: Vec<(String, Source)>
+    pub src: Vec<(String, Source)>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -21,10 +21,7 @@ pub enum VarSource {
 #[derive(serde::Deserialize, Debug)]
 pub enum Source {
     Html(String),
-    Md {
-        src: String,
-        template: String,
-    },
+    Md { src: String, template: String },
     For(String),
 }
 
@@ -40,14 +37,28 @@ struct InnerVs {
 impl ProjectConfig {
     pub fn get_stack(&self) -> VarStack {
         VarStack(Rc::new(InnerVs {
-            vars: self.vars.clone().into_iter().map(|(k, v)| (k, match v {
-                VarSource::Text(str) => str,
-                VarSource::Env(env) => match std::env::var(&env) {
-                    Ok(str) => str,
-                    Err(err) => fatal!("Unable to obtain environment variable; name={}; error={}", env, err),
-                }
-            })).collect::<HashMap<_, _>>(),
-            prev: None
+            vars: self
+                .vars
+                .clone()
+                .into_iter()
+                .map(|(k, v)| {
+                    (
+                        k,
+                        match v {
+                            VarSource::Text(str) => str,
+                            VarSource::Env(env) => match std::env::var(&env) {
+                                Ok(str) => str,
+                                Err(err) => fatal!(
+                                    "Unable to obtain environment variable; name={}; error={}",
+                                    env,
+                                    err
+                                ),
+                            },
+                        },
+                    )
+                })
+                .collect::<HashMap<_, _>>(),
+            prev: None,
         }))
     }
 }
