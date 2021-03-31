@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-use std::env::VarError;
-use std::path::{Path, PathBuf};
-use std::rc::Rc;
-#[macro_use]
 use crate::fatal;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::rc::Rc;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct ProjectConfig {
@@ -21,6 +19,7 @@ pub enum VarSource {
 #[derive(serde::Deserialize, Debug)]
 pub enum Source {
     Html(String),
+    Copy(String),
     Md { src: String, template: String },
     For(String),
 }

@@ -1,19 +1,12 @@
 - `<super:content></super:content>` will be replaced with content of other files.
 - `<super:wrap src="template.html"><!-- content --></super:content>` acts like include, but will place the content of it self at te position of `<super:content></super:content>` in the template. `<super:wrap> must always be a root element
-- `<super:include>REL_PATH/FILE.EXT</super:include>` will include a file and evaluate it (html or markdown)
+- `<super:include src="REL_PATH/FILE.EXT"></super:include>` will include a file and evaluate it (html or markdown)
 - The attribute `super:content="EXAMPLE_VAR"` replace the elements value with the value of `EXAMPLE_VAR`. Supersolid will error of the variable is not present
   ```html
   <!-- Assuming EXAMPLE_VAR is set to 'abc' -->
   <span super:content="EXAMPLE_VAR"></span>
   <!-- Will result in: -->
   <span>abc</span>
-  ```
-- `<super:insert>EXAMPLE_VAR</super:insert>` will replace the element with the value of `EXAMPLE_VAR`.  Supersolid will error of the variable is not present
-  ```html
-  <!-- Assuming NAME is set to 'Bob' -->
-  <p>Hi <super:insert>NAME</super:insert>!</p>
-  <!-- Will result in: -->
-  <p>Hi Bob!</p>
   ```
 - The attribute `super:if="EXAMPLE_VAR"` will remove elements if the variable `EXAMPLE_VAR` is not present.
   This is especially useful when used with `<super:insert>`

@@ -1,17 +1,17 @@
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::config::Source;
-use crate::processor::{HtmlProcessor, MarkdownProcessor, Processor};
-use glob::{Paths, PatternError};
+use crate::processor::{HtmlProcessor, MarkdownProcessor, Processor, ProcessorConfig};
+use crate::writer::Enqueuer;
+use markup5ever_rcdom::SerializableHandle;
 use path_clean::PathClean;
-use std::io::Error;
-use std::process::exit;
-use tracing::{error, info, trace, warn};
+use std::ffi::OsStr;
+use tracing::{info, trace, warn};
 
 mod config;
 mod parser;
 mod processor;
+mod writer;
 
 #[macro_export]
 macro_rules! fatal {
@@ -24,7 +24,7 @@ macro_rules! fatal {
 fn main() {
     tracing_subscriber::fmt::init();
 
-    if let Some(dir) = std::env::args().skip(1).next() {
+    if let Some(dir) = std::env::args().nth(1) {
         if let Err(err) = std::env::set_current_dir(&dir) {
             fatal!("Unable to set working directory; error={}", err);
         }
@@ -60,36 +60,63 @@ fn main() {
         ),
     };
 
-    info!("Outputting into {}", dist.to_string_lossy());
-    if dist.exists() {
-        warn!("Deleting old dist");
-        std::fs::remove_dir_all(&dist);
-    }
-    trace!("Creating new dist dir; path={}", &dist.to_string_lossy());
-    std::fs::create_dir_all(&dist);
+    let (handle, writer) = writer::Writer::new(dist);
 
     let var_stack = config.get_stack(); // TODO
     for (output, src) in config.src.into_iter() {
         let cfg = processor::ProcessorConfig {
-            out_path: &dist.join(Path::new(&output)),
-            vars: Default::default(),
+            out_path: Path::new(&output),
+            vars: var_stack.clone(),
+            writer: writer.clone(),
         };
         match src {
             Source::Html(src) => process(
                 src,
+                &output,
+                writer.clone(),
                 HtmlProcessor {
                     cfg,
                     stack: vec![],
                     content: vec![],
                 },
             ),
-            Source::Md { src, template } => process(src, MarkdownProcessor { cfg, template }),
+            Source::Md { src, template } => process(
+                src,
+                &output,
+                writer.clone(),
+                MarkdownProcessor { cfg, template },
+            ),
+            Source::Copy(src) => {
+                let glob = match glob::glob(&src) {
+                    Ok(glob) => glob,
+                    Err(err) => fatal!("Unable to glob files; path={}; error={}", src, err),
+                };
+                glob.map(|path| match path {
+                    Ok(path) => path,
+                    Err(err) => fatal!(
+                        "Unable to obtain path from glob; path={}; error={}",
+                        src,
+                        err
+                    ),
+                })
+                .map(|path| match path.file_name() {
+                    Some(name) => (path.to_path_buf(), Path::new(&output).join(Path::new(name))),
+                    None => fatal!(
+                        "Path contains no file name; path={}",
+                        path.to_string_lossy()
+                    ),
+                })
+                .for_each(|(from, to)| writer.copy(from, to));
+            }
             Source::For(src) => fatal!("'For' not implemented yet; src={}", src), // TODO
         }
     }
+
+    drop(writer);
+    handle.join();
 }
 
-fn process<P: Processor>(src: String, mut p: P) {
+fn process<P: Processor>(src: String, output: &str, writer: Enqueuer, mut p: P) {
     let glob = match glob::glob(&src) {
         Ok(glob) => glob,
         Err(err) => fatal!("Unable to glob files; path={}; error={}", src, err),
@@ -104,10 +131,55 @@ fn process<P: Processor>(src: String, mut p: P) {
             ),
         })
         .collect::<Vec<_>>();
-    match files.len() {
-        0 => warn!("No files found, skipping; path={}", src),
-        1 => p.one(files.pop().unwrap()),
+    let out_files = match files.len() {
+        0 => {
+            warn!("No files found, skipping; path={}", src);
+            return;
+        }
+        1 => vec![output.to_string()],
+        _ => files
+            .iter()
+            .map(|path| {
+                Path::new(output)
+                    .join(match path.file_name() {
+                        Some(name) => PathBuf::from(name),
+                        None => fatal!(
+                            "Path contains no file name; path={}",
+                            path.to_string_lossy()
+                        ),
+                    })
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .map(|mut file| {
+                if file.ends_with(".md") {
+                    file = format!("{}.html", &file[..file.len() - 3]);
+                }
+                file
+            })
+            .collect(),
+    };
+    let out = match files.len() {
+        1 => vec![p.one(files.pop().unwrap())],
         _ => p.many(files),
+    };
+
+    let opts = html5ever::serialize::SerializeOpts {
+        create_missing_parent: true,
+        ..Default::default()
+    };
+    for (handle, output) in out
+        .into_iter()
+        .zip(out_files.into_iter().map(PathBuf::from))
+    {
+        let mut ser = Vec::new();
+        html5ever::serialize(
+            &mut ser,
+            &Into::<SerializableHandle>::into(handle),
+            opts.clone(),
+        )
+        .unwrap();
+        writer.file(output, String::from_utf8(ser).unwrap());
     }
 }
 
