@@ -5,8 +5,7 @@ use crate::processor::{HtmlProcessor, MarkdownProcessor, Processor, ProcessorCon
 use crate::writer::Enqueuer;
 use markup5ever_rcdom::SerializableHandle;
 use path_clean::PathClean;
-use std::ffi::OsStr;
-use tracing::{info, trace, warn};
+use tracing::{trace, warn};
 
 mod config;
 mod parser;
